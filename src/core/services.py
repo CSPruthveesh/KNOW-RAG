@@ -56,16 +56,28 @@ Content:
 
 def build_sources(documents):
     sources = []
+    seen = set()
     for doc, score in documents:
-        source = doc.metadata.get("source","Unknown")
+        doc_type = doc.metadata.get("type", "unknown").lower()
+        source = doc.metadata.get("source", doc.metadata.get("url", "Unknown Source"))
         page = doc.metadata.get("page")
-        doc_type = doc.metadata.get("type","Unknown")
-        if page:
-            sources.append(f"[{doc_type.upper()}] {source} (Page {page}) | Score: {score:.4f}")
-        else:
-            sources.append(f"[{doc_type.upper()}] {source} | Score: {score:.4f}")
-            
-    return list(dict.fromkeys(sources))
+        url = doc.metadata.get("url") if doc_type != "pdf" else None
+        preview = doc.page_content.strip()[:240] + ("..." if len(doc.page_content.strip()) > 240 else "")
+        
+        key = (source, page)
+        if key in seen:
+            continue
+        seen.add(key)
+        
+        sources.append({
+            "type": doc_type,
+            "source": source,
+            "page": page,
+            "url": url,
+            "score": round(float(score), 4),
+            "preview": preview
+        })
+    return sources
 
 
 def generate_with_retry(prompt, max_retries=5):
@@ -113,6 +125,13 @@ def ask(question, session_id="default_session"):
         memory.add_user_message(question, session_id=session_id)
         memory.add_ai_message(answer_text, session_id=session_id)
     
+    latencies = {
+        "retriever": round(retriever_latency, 1),
+        "reranker": round(reranker_latency, 1),
+        "llm": round(llm_latency, 1),
+        "total": round(retriever_latency + reranker_latency + llm_latency, 1)
+    }
+    
     print("-"*50)    
     print("-----LATENCY BREAKDOWN-----")
     print(f"Stage 1 (Hybrid Retriever) : {retriever_latency:.2f} ms")
@@ -125,7 +144,8 @@ def ask(question, session_id="default_session"):
     return(
         standalone_question,
         answer_text,
-        build_sources(docs)
+        build_sources(docs),
+        latencies
     )
     
 def ask_stream(question, session_id="default_session"):
@@ -173,11 +193,19 @@ def ask_stream(question, session_id="default_session"):
         memory.add_ai_message(full_answer, session_id=session_id)
     
     sources = build_sources(docs)
+    latencies = {
+        "retriever": round(retriever_latency, 1),
+        "reranker": round(reranker_latency, 1),
+        "llm": round(llm_latency, 1),
+        "total": round(retriever_latency + reranker_latency + llm_latency, 1)
+    }
+    
     yield "\n\n<END_OF_ANSWER>\n"
     yield json.dumps(
         {
             "standalone_question": standalone_question,
-            "sources": sources
+            "sources": sources,
+            "latencies": latencies
         }
     )
     
