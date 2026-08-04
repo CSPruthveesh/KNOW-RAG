@@ -87,7 +87,7 @@ def generate_with_retry(prompt, max_retries=5):
  
     
 def ask(question, session_id="default_session"):
-    standalone_question = rewrite_question(question,session_id="default_session")
+    standalone_question = rewrite_question(question, session_id=session_id)
     if "Error: Google Gemini rate limit exceeded" in standalone_question:
         return question, standalone_question, []
     
@@ -102,7 +102,7 @@ def ask(question, session_id="default_session"):
     reranker_latency = (end_reranker-start_reranker)*1000
     
     context = build_context(docs)
-    history = memory.get_history()
+    history = memory.get_history(session_id=session_id)
     prompt = RAG_PROMPT.format(history=history,context=context,question=question)
     
     start_llm = time.perf_counter()
@@ -110,8 +110,8 @@ def ask(question, session_id="default_session"):
     end_llm = time.perf_counter()
     llm_latency = (end_llm-start_llm)*1000
     if "Error: Google Gemini rate limit exceeded" not in answer_text:
-        memory.add_user_message(question)
-        memory.add_ai_message(answer_text)
+        memory.add_user_message(question, session_id=session_id)
+        memory.add_ai_message(answer_text, session_id=session_id)
     
     print("-"*50)    
     print("-----LATENCY BREAKDOWN-----")
@@ -128,8 +128,8 @@ def ask(question, session_id="default_session"):
         build_sources(docs)
     )
     
-def ask_stream(question):
-    standalone_question = rewrite_question(question)
+def ask_stream(question, session_id="default_session"):
+    standalone_question = rewrite_question(question, session_id=session_id)
     if "Error: Google Gemini rate limit exceeded" in standalone_question:
         yield standalone_question
         return
@@ -145,7 +145,7 @@ def ask_stream(question):
     reranker_latency = (end_reranker-start_reranker)*1000
     
     context = build_context(docs)
-    history = memory.get_history()
+    history = memory.get_history(session_id=session_id)
     prompt = RAG_PROMPT.format(history=history,context=context,question=question)
     
     start_llm = time.perf_counter()
@@ -168,8 +168,9 @@ def ask_stream(question):
         return
     end_llm = time.perf_counter()
     llm_latency = (end_llm-start_llm)*1000
-    memory.add_user_message(question)
-    memory.add_ai_message(full_answer)
+    if "Error: Google Gemini rate limit exceeded" not in full_answer:
+        memory.add_user_message(question, session_id=session_id)
+        memory.add_ai_message(full_answer, session_id=session_id)
     
     sources = build_sources(docs)
     yield "\n\n<END_OF_ANSWER>\n"
@@ -189,8 +190,8 @@ def ask_stream(question):
     print("-"*50)
     
     
-def rewrite_question(question, session_id):
-    history = memory.get_history(session_id)
+def rewrite_question(question, session_id="default_session"):
+    history = memory.get_history(session_id=session_id)
     if not history.strip():
         return question
     prompt = REWRITE_PROMPT.format(

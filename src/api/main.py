@@ -54,10 +54,9 @@ def chat(request: ChatRequest):
     
 @app.post("/stream")
 def stream_chat(request: ChatRequest):
-    
     try:
         return StreamingResponse(
-            ask_stream(request.question),
+            ask_stream(request.question, request.session_id),
             media_type="text/plain"
         )
     except Exception as e:
