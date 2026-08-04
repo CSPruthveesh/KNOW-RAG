@@ -55,6 +55,12 @@ class PDFIngestor:
     def ingest(self, pdf_path):
         docs = self.create_documents(pdf_path)
         self.vector_store.add_documents(docs)
-        print(f"-----Ingested {len(docs)} chunks-----") 
+        print(f"-----Ingested {len(docs)} chunks-----")
+        try:
+            from src.core.services import refresh_index
+            refresh_index()
+            print("-----BM25 Index Refreshed-----")
+        except Exception:
+            pass 
     
     

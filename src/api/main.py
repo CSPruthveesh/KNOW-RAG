@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from src.core.services import ask, ask_stream
+from src.core.services import ask, ask_stream, refresh_index
 import uuid
 import os
 
@@ -35,6 +35,14 @@ def home():
 def health():
     return {
         "status": "Healthy"
+    }
+
+@app.post("/refresh")
+def refresh():
+    total_docs = refresh_index()
+    return {
+        "status": "Index refreshed successfully",
+        "total_documents": total_docs
     }
     
 @app.post("/chat")

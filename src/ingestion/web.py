@@ -43,3 +43,9 @@ class WebsiteIngestor:
         docs = self.add_metadata(docs)
         self.vector_store.add_documents(docs)
         print(f"-----Ingested {len(docs)} website chunks-----")
+        try:
+            from src.core.services import refresh_index
+            refresh_index()
+            print("-----BM25 Index Refreshed-----")
+        except Exception:
+            pass

@@ -14,19 +14,26 @@ import json
 client = genai.Client(api_key=GOOGLE_API_KEY)
 retriever = Retriever()
 memory = ChatMemory()
-db_data = retriever.vector_store.db.get()
-all_docs = [
-    Document(page_content=txt, metadata=meta)
-    for txt, meta in zip(db_data["documents"], db_data["metadatas"])
-]
-
-
-hybrid_retriever = HybridRetriever(
-    vectorstore=retriever.vector_store,
-    documents=all_docs
-)
-
 reranker = Reranker()
+
+hybrid_retriever = None
+all_docs = []
+
+def refresh_index():
+    global hybrid_retriever, all_docs
+    db_data = retriever.vector_store.db.get()
+    all_docs = [
+        Document(page_content=txt, metadata=meta)
+        for txt, meta in zip(db_data["documents"], db_data["metadatas"])
+    ]
+    hybrid_retriever = HybridRetriever(
+        vectorstore=retriever.vector_store,
+        documents=all_docs
+    )
+    return len(all_docs)
+
+# Initial index load
+refresh_index()
 
 def build_context(documents):
     context = []
@@ -240,7 +247,7 @@ if __name__ == "__main__":
             print("-----Conversation cleared-----")
             continue
             
-        standalone_question,answer, sources = ask(question)
+        standalone_question, answer, sources, latencies = ask(question)
         print("\n" + "-"*50)
         print("\nStandalone Question:")
         print("\n" + "-"*50)
