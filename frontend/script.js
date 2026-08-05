@@ -46,10 +46,7 @@ function initApp() {
     sessionIdDisplay.textContent = sessionId.substring(0, 8) + '...';
   }
 
-  // Dev Mode Toggle Listener
-  if (devModeBtn) {
-    devModeBtn.addEventListener('click', toggleDevMode);
-  }
+  // Dev Mode Toggle managed via onclick attribute in index.html
 
   // Refresh Index Listener
   if (refreshIndexBtn) {
@@ -127,11 +124,223 @@ function initApp() {
       }
     });
   }
+
+  // Setup Dev Mode Ingestion
+  setupIngestion();
+  loadSources();
 }
 
+function setupIngestion() {
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const scrapeUrlBtn = document.getElementById('scrape-url-btn');
+  const webUrlInput = document.getElementById('web-url-input');
+
+  if (dropZone && fileInput) {
+    // Prevent default drag events to allow drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => e.preventDefault(), false);
+    });
+
+    // Drag-over styling
+    dropZone.addEventListener('dragover', () => {
+      dropZone.classList.add('border-zinc-500', 'bg-zinc-100');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-zinc-500', 'bg-zinc-100');
+    });
+
+    // Drop handler
+    dropZone.addEventListener('drop', (e) => {
+      dropZone.classList.remove('border-zinc-500', 'bg-zinc-100');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        uploadFile(files[0]);
+      }
+    });
+
+    // File input change handler
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        uploadFile(fileInput.files[0]);
+      }
+    });
+  }
+
+  if (scrapeUrlBtn && webUrlInput) {
+    scrapeUrlBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const url = webUrlInput.value.trim();
+      if (!url) {
+        alert("Please enter a valid documentation URL.");
+        return;
+      }
+
+      scrapeUrlBtn.disabled = true;
+      const originalText = scrapeUrlBtn.textContent;
+      scrapeUrlBtn.textContent = 'Scraping...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/ingest-web`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Success: ${data.message}`);
+          webUrlInput.value = '';
+          loadSources();
+        } else {
+          alert(`Error: ${data.detail || 'Failed to scrape website'}`);
+        }
+      } catch (err) {
+        alert(`Request failed: ${err.message}`);
+      } finally {
+        scrapeUrlBtn.disabled = false;
+        scrapeUrlBtn.textContent = originalText;
+      }
+    });
+  }
+}
+
+async function uploadFile(file) {
+  const dropZone = document.getElementById('drop-zone');
+  const originalHtml = dropZone.innerHTML;
+  
+  dropZone.innerHTML = `
+    <div class="flex flex-col items-center justify-center space-y-3">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-800"></div>
+      <p class="text-sm font-medium text-zinc-900">Uploading and chunking ${escapeHtml(file.name)}...</p>
+    </div>
+  `;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/ingest-file`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(`Success: ${data.message}`);
+      loadSources();
+    } else {
+      alert(`Error: ${data.detail || 'Failed to ingest file'}`);
+    }
+  } catch (err) {
+    alert(`Upload failed: ${err.message}`);
+  } finally {
+    dropZone.innerHTML = originalHtml;
+    // Rebind change event after innerHTML restoration
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) {
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+          uploadFile(fileInput.files[0]);
+        }
+      });
+    }
+  }
+}
+
+async function loadSources() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/list-sources`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const sources = data.sources || [];
+    
+    // Update active source counts in header and Dev Mode UI
+    const headerSub = document.getElementById('view-subtitle');
+    if (headerSub) {
+      headerSub.textContent = `${sources.length} sources active`;
+    }
+    const devCount = document.getElementById('dev-sources-count');
+    if (devCount) {
+      devCount.textContent = `${sources.length} files active in ChromaDB`;
+    }
+    
+    // 1. Update Sidebar Connected Sources List
+    const sidebarList = document.getElementById('sidebar-sources-list');
+    if (sidebarList) {
+      if (sources.length === 0) {
+        sidebarList.innerHTML = `<div class="text-[11px] text-zinc-400 px-2.5 py-2">No active sources</div>`;
+      } else {
+        sidebarList.innerHTML = sources.map(s => {
+          const isWeb = s.type === 'website';
+          const icon = isWeb 
+            ? `<svg class="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>`
+            : `<svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
+          const badge = isWeb
+            ? `<span class="text-[10px] text-zinc-400 font-mono">Web Docs</span>`
+            : `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>`;
+            
+          return `
+            <div class="group flex items-center justify-between px-2.5 py-2 rounded-lg text-xs text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+              <div class="flex items-center space-x-2.5 truncate">
+                ${icon}
+                <span class="truncate" title="${escapeHtml(s.source)}">${escapeHtml(s.source)}</span>
+              </div>
+              ${badge}
+            </div>
+          `;
+        }).join('');
+      }
+    }
+    
+    // 2. Update Dev Mode Sources Table
+    const devTable = document.getElementById('dev-sources-table');
+    if (devTable) {
+      if (sources.length === 0) {
+        devTable.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-6 text-center text-xs text-zinc-400">No documents ingested in vector database yet.</td>
+          </tr>
+        `;
+      } else {
+        devTable.innerHTML = sources.map(s => {
+          const isWeb = s.type === 'website';
+          const icon = isWeb 
+            ? `<svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>`
+            : `<svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
+            
+          return `
+            <tr class="hover:bg-zinc-50/50 transition-colors">
+              <td class="py-3 px-4 font-medium text-zinc-900 flex items-center space-x-2 truncate max-w-xs">
+                ${icon}
+                <span class="truncate" title="${escapeHtml(s.source)}">${escapeHtml(s.source)}</span>
+              </td>
+              <td class="py-3 px-4 font-mono text-zinc-500 uppercase">${escapeHtml(s.type)}</td>
+              <td class="py-3 px-4 font-mono text-zinc-700">${s.chunks} chunks</td>
+              <td class="py-3 px-4">
+                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span>Indexed</span>
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right space-x-2">
+                <button class="text-zinc-500 hover:text-zinc-900 font-mono text-[11px] hover:underline" onclick="handleRefreshIndex()">Re-index</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+  } catch (err) {
+    console.error("Error loading sources list:", err);
+  }
+}
+
+
 // Toggle Developer Mode View
-function toggleDevMode() {
+function toggleDevMode(e) {
+  if (e && e.preventDefault) e.preventDefault();
   isDevModeActive = !isDevModeActive;
+  console.log("Dev Mode Toggled! Active:", isDevModeActive);
 
   const stdView = document.getElementById('standard-mode-view');
   const dView = document.getElementById('dev-mode-view');
@@ -139,10 +348,17 @@ function toggleDevMode() {
   const btn = document.getElementById('dev-mode-btn');
   const vTitle = document.getElementById('view-title');
   const vSub = document.getElementById('view-subtitle');
+  const sideSrc = document.getElementById('sidebar-sources-container');
 
   if (isDevModeActive) {
-    if (stdView) stdView.classList.add('hidden');
-    if (dView) dView.classList.remove('hidden');
+    if (stdView) {
+      stdView.classList.add('hidden');
+      stdView.style.display = 'none';
+    }
+    if (dView) {
+      dView.classList.remove('hidden');
+      dView.style.display = 'block';
+    }
     if (btnText) btnText.textContent = 'Chat Mode';
     if (btn) {
       btn.classList.add('bg-zinc-900', 'text-white');
@@ -150,9 +366,18 @@ function toggleDevMode() {
     }
     if (vTitle) vTitle.textContent = 'Developer Ingestion & Pipeline';
     if (vSub) vSub.textContent = 'ChromaDB + Sparse BM25 ETL';
+    if (sideSrc) {
+      sideSrc.style.display = 'block';
+    }
   } else {
-    if (dView) dView.classList.add('hidden');
-    if (stdView) stdView.classList.remove('hidden');
+    if (dView) {
+      dView.classList.add('hidden');
+      dView.style.display = 'none';
+    }
+    if (stdView) {
+      stdView.classList.remove('hidden');
+      stdView.style.display = 'flex';
+    }
     if (btnText) btnText.textContent = 'Dev Mode';
     if (btn) {
       btn.classList.remove('bg-zinc-900', 'text-white');
@@ -160,6 +385,9 @@ function toggleDevMode() {
     }
     if (vTitle) vTitle.textContent = 'KNOW-RAG Synthesis Engine';
     if (vSub) vSub.textContent = '2 sources active';
+    if (sideSrc) {
+      sideSrc.style.display = 'none';
+    }
   }
 }
 

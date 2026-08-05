@@ -90,11 +90,11 @@
         <div class="flex-1 overflow-y-auto px-3 py-2 space-y-6">
           
           <!-- Knowledge Base Section -->
-          <div>
+          <div id="sidebar-sources-container" class="hidden">
             <div class="flex items-center justify-between px-2 mb-2">
               <span class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Connected Sources</span>
             </div>
-            <div class="space-y-1">
+            <div id="sidebar-sources-list" class="space-y-1">
               <div class="group flex items-center justify-between px-2.5 py-2 rounded-lg text-xs bg-zinc-100/80 text-zinc-800 font-medium border border-zinc-200/80">
                 <div class="flex items-center space-x-2.5 truncate">
                   <svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -139,7 +139,7 @@
         </div>
 
         <!-- Dev Mode Toggle Button -->
-        <button id="dev-mode-btn" onclick="toggleDevMode()" title="Toggle Developer / File Ingestion Mode" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 text-[11px] font-mono font-medium text-zinc-700 transition-colors shadow-xs cursor-pointer">
+        <button type="button" id="dev-mode-btn" onclick="toggleDevMode(event)" title="Toggle Developer / File Ingestion Mode" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 text-[11px] font-mono font-medium text-zinc-700 transition-colors shadow-xs cursor-pointer">
           <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
           <span id="dev-mode-text">Dev Mode</span>
         </button>
@@ -326,7 +326,7 @@
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-semibold text-zinc-900">Recently Ingested Knowledge Base</h3>
-              <span class="text-xs text-zinc-400 font-mono">2 files active in ChromaDB</span>
+              <span id="dev-sources-count" class="text-xs text-zinc-400 font-mono">0 files active in ChromaDB</span>
             </div>
 
             <div class="border border-zinc-200 rounded-2xl overflow-hidden bg-white shadow-xs">
@@ -340,7 +340,7 @@
                     <th class="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-zinc-150 text-xs">
+                <tbody id="dev-sources-table" class="divide-y divide-zinc-150 text-xs">
                   <tr class="hover:bg-zinc-50/50 transition-colors">
                     <td class="py-3 px-4 font-medium text-zinc-900 flex items-center space-x-2">
                       <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -407,6 +407,42 @@
 
   </div>
 
-  <script src="script.js"></script>
+  <!-- Inline Dev Mode Toggle — guaranteed to work regardless of script.js caching -->
+  <script>
+    var _devModeActive = false;
+
+    function toggleDevMode(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      _devModeActive = !_devModeActive;
+
+      var stdView = document.getElementById('standard-mode-view');
+      var dView   = document.getElementById('dev-mode-view');
+      var btnText = document.getElementById('dev-mode-text');
+      var btn     = document.getElementById('dev-mode-btn');
+      var vTitle  = document.getElementById('view-title');
+      var vSub    = document.getElementById('view-subtitle');
+      var sideSrc = document.getElementById('sidebar-sources-container');
+
+      if (_devModeActive) {
+        if (stdView) { stdView.style.display = 'none'; }
+        if (dView)   { dView.style.display   = 'flex'; dView.style.flexDirection = 'column'; }
+        if (btnText) { btnText.textContent = 'Chat Mode'; }
+        if (btn)     { btn.style.background = '#18181b'; btn.style.color = '#fff'; btn.style.borderColor = '#18181b'; }
+        if (vTitle)  { vTitle.textContent = 'Developer Ingestion & Pipeline'; }
+        if (vSub)    { vSub.textContent   = 'ChromaDB + Sparse BM25 ETL'; }
+        if (sideSrc) { sideSrc.style.display = 'block'; }
+      } else {
+        if (dView)   { dView.style.display   = 'none'; }
+        if (stdView) { stdView.style.display = 'flex'; stdView.style.flexDirection = 'column'; }
+        if (btnText) { btnText.textContent = 'Dev Mode'; }
+        if (btn)     { btn.style.background = '#fff'; btn.style.color = '#3f3f46'; btn.style.borderColor = '#e4e4e7'; }
+        if (vTitle)  { vTitle.textContent = 'KNOW-RAG Synthesis Engine'; }
+        if (vSub)    { vSub.textContent   = '2 sources active'; }
+        if (sideSrc) { sideSrc.style.display = 'none'; }
+      }
+    }
+  </script>
+
+  <script src="script.js?v=4"></script>
 </body>
 </html>
