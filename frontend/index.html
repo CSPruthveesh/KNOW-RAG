@@ -139,7 +139,7 @@
         </div>
 
         <!-- Dev Mode Toggle Button -->
-        <button id="dev-mode-btn" title="Toggle Developer / File Ingestion Mode" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 text-[11px] font-mono font-medium text-zinc-700 transition-colors shadow-xs">
+        <button id="dev-mode-btn" onclick="toggleDevMode()" title="Toggle Developer / File Ingestion Mode" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 text-[11px] font-mono font-medium text-zinc-700 transition-colors shadow-xs cursor-pointer">
           <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
           <span id="dev-mode-text">Dev Mode</span>
         </button>

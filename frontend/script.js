@@ -133,26 +133,37 @@ function initApp() {
 function toggleDevMode() {
   isDevModeActive = !isDevModeActive;
 
-  if (isDevModeActive) {
-    standardModeView.classList.add('hidden');
-    devModeView.classList.remove('hidden');
-    devModeText.textContent = 'Chat Mode';
-    devModeBtn.classList.add('bg-zinc-900', 'text-white');
-    devModeBtn.classList.remove('bg-white', 'text-zinc-700');
-    
-    if (viewTitle) viewTitle.textContent = 'Developer Ingestion & Pipeline';
-    if (viewSubtitle) viewSubtitle.textContent = 'ChromaDB + Sparse BM25 ETL';
-  } else {
-    devModeView.classList.add('hidden');
-    standardModeView.classList.remove('hidden');
-    devModeText.textContent = 'Dev Mode';
-    devModeBtn.classList.remove('bg-zinc-900', 'text-white');
-    devModeBtn.classList.add('bg-white', 'text-zinc-700');
+  const stdView = document.getElementById('standard-mode-view');
+  const dView = document.getElementById('dev-mode-view');
+  const btnText = document.getElementById('dev-mode-text');
+  const btn = document.getElementById('dev-mode-btn');
+  const vTitle = document.getElementById('view-title');
+  const vSub = document.getElementById('view-subtitle');
 
-    if (viewTitle) viewTitle.textContent = 'KNOW-RAG Synthesis Engine';
-    if (viewSubtitle) viewSubtitle.textContent = '2 sources active';
+  if (isDevModeActive) {
+    if (stdView) stdView.classList.add('hidden');
+    if (dView) dView.classList.remove('hidden');
+    if (btnText) btnText.textContent = 'Chat Mode';
+    if (btn) {
+      btn.classList.add('bg-zinc-900', 'text-white');
+      btn.classList.remove('bg-white', 'text-zinc-700');
+    }
+    if (vTitle) vTitle.textContent = 'Developer Ingestion & Pipeline';
+    if (vSub) vSub.textContent = 'ChromaDB + Sparse BM25 ETL';
+  } else {
+    if (dView) dView.classList.add('hidden');
+    if (stdView) stdView.classList.remove('hidden');
+    if (btnText) btnText.textContent = 'Dev Mode';
+    if (btn) {
+      btn.classList.remove('bg-zinc-900', 'text-white');
+      btn.classList.add('bg-white', 'text-zinc-700');
+    }
+    if (vTitle) vTitle.textContent = 'KNOW-RAG Synthesis Engine';
+    if (vSub) vSub.textContent = '2 sources active';
   }
 }
+
+window.toggleDevMode = toggleDevMode;
 
 // Handle Refresh Index POST Call
 async function handleRefreshIndex() {
