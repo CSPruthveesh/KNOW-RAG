@@ -126,10 +126,10 @@
         </div>
       </div>
 
-      <!-- User Info & Settings -->
+      <!-- User Info & Dev Mode Toggle Footer -->
       <div class="p-3 border-t border-zinc-150 bg-zinc-50/50 flex items-center justify-between">
-        <div class="flex items-center space-x-2.5 overflow-hidden">
-          <div class="w-7 h-7 rounded-full bg-zinc-200 border border-zinc-300 flex items-center justify-center text-xs font-semibold text-zinc-700">
+        <div class="flex items-center space-x-2 overflow-hidden">
+          <div class="w-7 h-7 rounded-full bg-zinc-200 border border-zinc-300 flex items-center justify-center text-xs font-semibold text-zinc-700 flex-shrink-0">
             PA
           </div>
           <div class="truncate">
@@ -137,6 +137,12 @@
             <div class="text-[10px] text-zinc-400 truncate">Enterprise Tier</div>
           </div>
         </div>
+
+        <!-- Dev Mode Toggle Button -->
+        <button id="dev-mode-btn" title="Toggle Developer / File Ingestion Mode" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 text-[11px] font-mono font-medium text-zinc-700 transition-colors shadow-xs">
+          <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          <span id="dev-mode-text">Dev Mode</span>
+        </button>
       </div>
 
     </aside>
@@ -151,114 +157,231 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
           <div class="flex items-center space-x-2">
-            <h1 class="text-sm font-semibold text-zinc-900">KNOW-RAG Synthesis Engine</h1>
+            <h1 id="view-title" class="text-sm font-semibold text-zinc-900">KNOW-RAG Synthesis Engine</h1>
             <span class="text-zinc-300">•</span>
-            <span class="text-xs text-zinc-500 font-mono">2 sources active</span>
+            <span id="view-subtitle" class="text-xs text-zinc-500 font-mono">2 sources active</span>
           </div>
         </div>
 
         <!-- Top Right Actions -->
         <div class="flex items-center space-x-2">
+          <button id="refresh-index-btn" title="Refresh Vector & Sparse BM25 Index" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">
+            <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Re-index BM25</span>
+          </button>
           <button id="toggle-sources-btn" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors">
-            <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 01-2-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             <span>Citation Drawer</span>
           </button>
         </div>
       </header>
 
-      <!-- Scrollable Message Stream -->
-      <div id="chat-stream" class="flex-1 overflow-y-auto px-4 md:px-8 py-8 space-y-6 max-w-4xl mx-auto w-full">
+      <!-- VIEW 1: STANDARD CHAT / SYNTHESIS MODE -->
+      <div id="standard-mode-view" class="flex-1 flex flex-col overflow-hidden min-h-0">
+        <!-- Scrollable Message Stream -->
+        <div id="chat-stream" class="flex-1 overflow-y-auto px-4 md:px-8 py-8 space-y-6 max-w-4xl mx-auto w-full">
 
-        <!-- Starter Suggestions Container -->
-        <div id="starter-questions" class="space-y-4 py-8">
-          <div class="text-center space-y-1">
-            <h2 class="text-xl font-bold tracking-tight text-zinc-900">What would you like to synthesize today?</h2>
-            <p class="text-xs text-zinc-500">Select a suggested prompt below or type your custom query to query your indexed documents.</p>
-          </div>
+          <!-- Starter Suggestions Container -->
+          <div id="starter-questions" class="space-y-4 py-8">
+            <div class="text-center space-y-1">
+              <h2 class="text-xl font-bold tracking-tight text-zinc-900">What would you like to synthesize today?</h2>
+              <p class="text-xs text-zinc-500">Select a suggested prompt below or type your custom query to query your indexed documents.</p>
+            </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-            <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="Summarize the Attention Is All You Need paper and its key architecture.">
-              <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
-                <span>📄</span>
-                <span>Summarize 'Attention Is All You Need'</span>
-              </div>
-              <div class="text-[11px] text-zinc-500 leading-snug">Extract key Transformer architecture principles and attention mechanisms.</div>
-            </button>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+              <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="Summarize the Attention Is All You Need paper and its key architecture.">
+                <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
+                  <span>📄</span>
+                  <span>Summarize 'Attention Is All You Need'</span>
+                </div>
+                <div class="text-[11px] text-zinc-500 leading-snug">Extract key Transformer architecture principles and attention mechanisms.</div>
+              </button>
 
-            <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="What is LangChain middleware and what packages does it support?">
-              <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
-                <span>🌐</span>
-                <span>LangChain Middleware Overview</span>
-              </div>
-              <div class="text-[11px] text-zinc-500 leading-snug">Explore middleware integrations, packages, and architecture.</div>
-            </button>
+              <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="What is LangChain middleware and what packages does it support?">
+                <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
+                  <span>🌐</span>
+                  <span>LangChain Middleware Overview</span>
+                </div>
+                <div class="text-[11px] text-zinc-500 leading-snug">Explore middleware integrations, packages, and architecture.</div>
+              </button>
 
-            <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="How do I configure LangSmith tracing for monitoring and debugging?">
-              <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
-                <span>⚡</span>
-                <span>Configure LangSmith Tracing</span>
-              </div>
-              <div class="text-[11px] text-zinc-500 leading-snug">Step-by-step setup guide for observability and tracing.</div>
-            </button>
+              <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="How do I configure LangSmith tracing for monitoring and debugging?">
+                <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
+                  <span>⚡</span>
+                  <span>Configure LangSmith Tracing</span>
+                </div>
+                <div class="text-[11px] text-zinc-500 leading-snug">Step-by-step setup guide for observability and tracing.</div>
+              </button>
 
-            <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="Explain how hybrid retrieval and reciprocal rank fusion work in this app.">
-              <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
-                <span>🔍</span>
-                <span>Hybrid Search & RRF Blending</span>
-              </div>
-              <div class="text-[11px] text-zinc-500 leading-snug">Learn how Chroma dense vectors and BM25 sparse scores are fused.</div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Dynamic Messages Container -->
-        <div id="messages-container" class="space-y-6"></div>
-
-      </div>
-
-      <!-- Bottom Anchored Input Area -->
-      <div class="p-4 md:p-6 bg-white/90 backdrop-blur-md border-t border-zinc-150">
-        <form id="chat-form" class="max-w-4xl mx-auto space-y-2">
-          
-          <!-- Context Pill Bar -->
-          <div class="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
-            <span class="text-zinc-400 text-[11px] font-medium flex items-center space-x-1">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-              <span>Active Context:</span>
-            </span>
-            <span class="inline-flex items-center space-x-1 bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded-md border border-zinc-200 text-[11px]">
-              <span>attention.pdf + web docs</span>
-            </span>
-          </div>
-
-          <!-- Main Input Field Box -->
-          <div class="relative bg-zinc-50 hover:bg-zinc-100/60 focus-within:bg-white focus-within:ring-2 focus-within:ring-zinc-900/10 focus-within:border-zinc-400 border border-zinc-250 rounded-2xl p-2.5 transition-all shadow-xs">
-            <textarea 
-              id="user-input"
-              rows="2" 
-              placeholder="Ask a question about your documents..." 
-              class="w-full bg-transparent text-sm text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none px-2 py-1 leading-relaxed"
-            ></textarea>
-            
-            <div class="flex items-center justify-between pt-1 border-t border-zinc-200/60">
-              <!-- Upload & Tools -->
-              <div class="flex items-center space-x-1">
-                <span class="text-[11px] font-mono text-zinc-400 px-1">Top-k Candidates: 25 (Rerank: 5)</span>
-              </div>
-
-              <!-- Submit Button -->
-              <button type="submit" id="send-btn" class="bg-zinc-900 hover:bg-zinc-800 text-white p-2 rounded-xl transition-all shadow-sm flex items-center justify-center">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <button class="starter-card text-left p-3.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 rounded-xl transition-all shadow-xs group" data-prompt="Explain how hybrid retrieval and reciprocal rank fusion work in this app.">
+                <div class="font-medium text-xs text-zinc-900 group-hover:text-zinc-950 mb-1 flex items-center space-x-1.5">
+                  <span>🔍</span>
+                  <span>Hybrid Search & RRF Blending</span>
+                </div>
+                <div class="text-[11px] text-zinc-500 leading-snug">Learn how Chroma dense vectors and BM25 sparse scores are fused.</div>
               </button>
             </div>
           </div>
 
-          <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1">
-            <span>RAG Mode: <strong class="text-zinc-600 font-medium">Hybrid Dense (Chroma) + Sparse (BM25)</strong></span>
-            <span>Press <kbd class="font-mono bg-zinc-100 border border-zinc-200 px-1 py-0.5 rounded text-[10px] text-zinc-500">Enter ↵</kbd> to send</span>
+          <!-- Dynamic Messages Container -->
+          <div id="messages-container" class="space-y-6"></div>
+
+        </div>
+
+        <!-- Bottom Anchored Input Area -->
+        <div class="p-4 md:p-6 bg-white/90 backdrop-blur-md border-t border-zinc-150 flex-shrink-0">
+          <form id="chat-form" class="max-w-4xl mx-auto space-y-2">
+            
+            <!-- Context Pill Bar -->
+            <div class="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
+              <span class="text-zinc-400 text-[11px] font-medium flex items-center space-x-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                <span>Active Context:</span>
+              </span>
+              <span class="inline-flex items-center space-x-1 bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded-md border border-zinc-200 text-[11px]">
+                <span>attention.pdf + web docs</span>
+              </span>
+            </div>
+
+            <!-- Main Input Field Box -->
+            <div class="relative bg-zinc-50 hover:bg-zinc-100/60 focus-within:bg-white focus-within:ring-2 focus-within:ring-zinc-900/10 focus-within:border-zinc-400 border border-zinc-250 rounded-2xl p-2.5 transition-all shadow-xs">
+              <textarea 
+                id="user-input"
+                rows="2" 
+                placeholder="Ask a question about your documents..." 
+                class="w-full bg-transparent text-sm text-zinc-900 placeholder-zinc-400 resize-none focus:outline-none px-2 py-1 leading-relaxed"
+              ></textarea>
+              
+              <div class="flex items-center justify-between pt-1 border-t border-zinc-200/60">
+                <!-- Upload & Tools -->
+                <div class="flex items-center space-x-1">
+                  <span class="text-[11px] font-mono text-zinc-400 px-1">Top-k Candidates: 25 (Rerank: 5)</span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="send-btn" class="bg-zinc-900 hover:bg-zinc-800 text-white p-2 rounded-xl transition-all shadow-sm flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-zinc-400 px-1">
+              <span>RAG Mode: <strong class="text-zinc-600 font-medium">Hybrid Dense (Chroma) + Sparse (BM25)</strong></span>
+              <span>Press <kbd class="font-mono bg-zinc-100 border border-zinc-200 px-1 py-0.5 rounded text-[10px] text-zinc-500">Enter ↵</kbd> to send</span>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- VIEW 2: DEVELOPER / FILE INGESTION MODE -->
+      <div id="dev-mode-view" class="flex-1 overflow-y-auto px-6 md:px-12 py-8 max-w-5xl mx-auto w-full hidden">
+        <div class="space-y-8">
+          
+          <!-- Dev Mode Header -->
+          <div class="flex items-center justify-between border-b border-zinc-200 pb-4">
+            <div>
+              <h2 class="text-xl font-bold tracking-tight text-zinc-900">Developer File Ingestion & ETL</h2>
+              <p class="text-xs text-zinc-500">Upload new PDFs or scrape web URLs to automatically chunk, embed, and update vector/sparse indices.</p>
+            </div>
+            <span class="font-mono text-xs px-2.5 py-1 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-700">ChromaDB + BM25 active</span>
           </div>
 
-        </form>
+          <!-- Drag and Drop Upload Zone -->
+          <div id="drop-zone" class="border-2 border-dashed border-zinc-300 hover:border-zinc-500 rounded-2xl bg-zinc-50/80 hover:bg-zinc-100/60 transition-all p-10 text-center cursor-pointer group shadow-xs">
+            <div class="flex flex-col items-center justify-center space-y-3">
+              <div class="w-12 h-12 rounded-full bg-zinc-200/80 group-hover:bg-zinc-300/80 flex items-center justify-center text-zinc-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              </div>
+              <div class="space-y-1">
+                <p class="text-sm font-semibold text-zinc-900">Drag and drop documents here, or click to browse</p>
+                <p class="text-xs text-zinc-400 font-mono">Supports PDF files up to 25MB • Automatic page-level chunking</p>
+              </div>
+              <input type="file" id="file-input" class="hidden" accept=".pdf,.doc,.docx,.txt">
+              <button type="button" onclick="document.getElementById('file-input').click()" class="bg-zinc-900 hover:bg-zinc-800 text-white font-medium text-xs px-4 py-2 rounded-xl transition-all shadow-sm">
+                Browse Files
+              </button>
+            </div>
+          </div>
+
+          <!-- Web Scraper Ingestion Section -->
+          <div class="bg-white border border-zinc-200 rounded-2xl p-5 space-y-4 shadow-xs">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-zinc-900 flex items-center space-x-2">
+                <svg class="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                <span>Scrape Web Documentation</span>
+              </h3>
+              <span class="text-[11px] font-mono text-zinc-400">Recursive Depth: 2</span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <input type="url" id="web-url-input" placeholder="https://docs.example.com/api" class="flex-1 bg-zinc-50 border border-zinc-250 rounded-xl px-3.5 py-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400">
+              <button id="scrape-url-btn" class="bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium px-4 py-2 rounded-xl transition-all shadow-sm">
+                Scrape & Ingest
+              </button>
+            </div>
+          </div>
+
+          <!-- Ingested Files Table -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-zinc-900">Recently Ingested Knowledge Base</h3>
+              <span class="text-xs text-zinc-400 font-mono">2 files active in ChromaDB</span>
+            </div>
+
+            <div class="border border-zinc-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-zinc-150 bg-zinc-50/80 text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
+                    <th class="py-3 px-4">Document / Source</th>
+                    <th class="py-3 px-4">Type</th>
+                    <th class="py-3 px-4">Chunks</th>
+                    <th class="py-3 px-4">Status</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-zinc-150 text-xs">
+                  <tr class="hover:bg-zinc-50/50 transition-colors">
+                    <td class="py-3 px-4 font-medium text-zinc-900 flex items-center space-x-2">
+                      <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                      <span>attention.pdf</span>
+                    </td>
+                    <td class="py-3 px-4 font-mono text-zinc-500">PDF</td>
+                    <td class="py-3 px-4 font-mono text-zinc-700">42 chunks</td>
+                    <td class="py-3 px-4">
+                      <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>Indexed</span>
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                      <button class="text-zinc-500 hover:text-zinc-900 font-mono text-[11px] hover:underline">Re-index</button>
+                    </td>
+                  </tr>
+
+                  <tr class="hover:bg-zinc-50/50 transition-colors">
+                    <td class="py-3 px-4 font-medium text-zinc-900 flex items-center space-x-2">
+                      <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                      <span>docs.langchain.com</span>
+                    </td>
+                    <td class="py-3 px-4 font-mono text-zinc-500">Web Scrape</td>
+                    <td class="py-3 px-4 font-mono text-zinc-700">118 chunks</td>
+                    <td class="py-3 px-4">
+                      <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>Indexed</span>
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                      <button class="text-zinc-500 hover:text-zinc-900 font-mono text-[11px] hover:underline">Re-index</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
       </div>
 
     </main>

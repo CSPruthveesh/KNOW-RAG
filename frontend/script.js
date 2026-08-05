@@ -8,6 +8,7 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 let sessionId = crypto.randomUUID ? crypto.randomUUID() : 'sess_' + Date.now();
 let chatMessages = [];
 let lastRetrievedSources = [];
+let isDevModeActive = false;
 
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
@@ -19,8 +20,18 @@ const toggleSourcesBtn = document.getElementById('toggle-sources-btn');
 const closeDrawerBtn = document.getElementById('close-drawer-btn');
 
 const newChatBtn = document.getElementById('new-chat-btn');
+const refreshIndexBtn = document.getElementById('refresh-index-btn');
 const streamingToggle = document.getElementById('streaming-toggle');
 const sessionIdDisplay = document.getElementById('session-id-display');
+
+const viewTitle = document.getElementById('view-title');
+const viewSubtitle = document.getElementById('view-subtitle');
+
+const standardModeView = document.getElementById('standard-mode-view');
+const devModeView = document.getElementById('dev-mode-view');
+
+const devModeBtn = document.getElementById('dev-mode-btn');
+const devModeText = document.getElementById('dev-mode-text');
 
 const starterQuestions = document.getElementById('starter-questions');
 const messagesContainer = document.getElementById('messages-container');
@@ -28,12 +39,21 @@ const drawerChunksContainer = document.getElementById('drawer-chunks-container')
 
 const chatForm = document.getElementById('chat-form');
 const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
 
 // Initialize App
 function initApp() {
   if (sessionIdDisplay) {
     sessionIdDisplay.textContent = sessionId.substring(0, 8) + '...';
+  }
+
+  // Dev Mode Toggle Listener
+  if (devModeBtn) {
+    devModeBtn.addEventListener('click', toggleDevMode);
+  }
+
+  // Refresh Index Listener
+  if (refreshIndexBtn) {
+    refreshIndexBtn.addEventListener('click', handleRefreshIndex);
   }
 
   // Sidebar Controls
@@ -92,17 +112,61 @@ function initApp() {
   });
 
   // Chat Form Listeners
-  chatForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    handleFormSubmit();
-  });
-
-  userInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
       handleFormSubmit();
-    }
-  });
+    });
+  }
+
+  if (userInput) {
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleFormSubmit();
+      }
+    });
+  }
+}
+
+// Toggle Developer Mode View
+function toggleDevMode() {
+  isDevModeActive = !isDevModeActive;
+
+  if (isDevModeActive) {
+    standardModeView.classList.add('hidden');
+    devModeView.classList.remove('hidden');
+    devModeText.textContent = 'Chat Mode';
+    devModeBtn.classList.add('bg-zinc-900', 'text-white');
+    devModeBtn.classList.remove('bg-white', 'text-zinc-700');
+    
+    if (viewTitle) viewTitle.textContent = 'Developer Ingestion & Pipeline';
+    if (viewSubtitle) viewSubtitle.textContent = 'ChromaDB + Sparse BM25 ETL';
+  } else {
+    devModeView.classList.add('hidden');
+    standardModeView.classList.remove('hidden');
+    devModeText.textContent = 'Dev Mode';
+    devModeBtn.classList.remove('bg-zinc-900', 'text-white');
+    devModeBtn.classList.add('bg-white', 'text-zinc-700');
+
+    if (viewTitle) viewTitle.textContent = 'KNOW-RAG Synthesis Engine';
+    if (viewSubtitle) viewSubtitle.textContent = '2 sources active';
+  }
+}
+
+// Handle Refresh Index POST Call
+async function handleRefreshIndex() {
+  const originalText = refreshIndexBtn.innerHTML;
+  refreshIndexBtn.innerHTML = `<span>Re-indexing...</span>`;
+  try {
+    const res = await fetch(`${API_BASE_URL}/refresh`, { method: 'POST' });
+    const data = await res.json();
+    alert(`Index Refreshed Successfully!\nTotal Chunks Indexed: ${data.total_documents}`);
+  } catch (err) {
+    alert(`Error refreshing index: ${err.message}`);
+  } finally {
+    refreshIndexBtn.innerHTML = originalText;
+  }
 }
 
 // Handle Form Submission
@@ -110,17 +174,11 @@ async function handleFormSubmit() {
   const questionText = userInput.value.trim();
   if (!questionText) return;
 
-  // Clear Input
   userInput.value = '';
   starterQuestions.classList.add('hidden');
 
-  // Add User Message UI
   appendUserMessage(questionText);
-
-  // Add Processing Indicator
   const indicatorId = showProcessingIndicator();
-
-  // Create AI Message Box
   const { messageCard, contentEl, metaEl } = createAIMessageContainer();
 
   const isStreaming = streamingToggle ? streamingToggle.checked : true;
