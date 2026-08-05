@@ -1,3 +1,4 @@
+import time
 from bs4 import BeautifulSoup
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import RecursiveUrlLoader
@@ -35,6 +36,7 @@ class WebsiteIngestor:
     def add_metadata(self,docs):
         for doc in docs:
             doc.metadata["type"] = "website"
+            doc.metadata["timestamp"] = time.time()
             
         return docs
     

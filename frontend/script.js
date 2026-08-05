@@ -9,6 +9,7 @@ let sessionId = crypto.randomUUID ? crypto.randomUUID() : 'sess_' + Date.now();
 let chatMessages = [];
 let lastRetrievedSources = [];
 let isDevModeActive = false;
+let cachedSources = [];
 
 // DOM Elements
 const sidebar = document.getElementById('sidebar');
@@ -128,6 +129,17 @@ function initApp() {
   // Setup Dev Mode Ingestion
   setupIngestion();
   loadSources();
+
+  const typeFilter = document.getElementById('source-type-filter');
+  if (typeFilter) {
+    typeFilter.addEventListener('change', () => {
+      const filterVal = typeFilter.value;
+      const filtered = filterVal === 'all' 
+        ? cachedSources 
+        : cachedSources.filter(s => s.type === filterVal);
+      renderSourcesTable(filtered);
+    });
+  }
 }
 
 function setupIngestion() {
@@ -253,6 +265,7 @@ async function loadSources() {
     if (!res.ok) return;
     const data = await res.json();
     const sources = data.sources || [];
+    cachedSources = sources;
     
     // Update active source counts in header and Dev Mode UI
     const headerSub = document.getElementById('view-subtitle');
@@ -292,46 +305,57 @@ async function loadSources() {
       }
     }
     
-    // 2. Update Dev Mode Sources Table
-    const devTable = document.getElementById('dev-sources-table');
-    if (devTable) {
-      if (sources.length === 0) {
-        devTable.innerHTML = `
-          <tr>
-            <td colspan="5" class="py-6 text-center text-xs text-zinc-400">No documents ingested in vector database yet.</td>
-          </tr>
-        `;
-      } else {
-        devTable.innerHTML = sources.map(s => {
-          const isWeb = s.type === 'website';
-          const icon = isWeb 
-            ? `<svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>`
-            : `<svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
-            
-          return `
-            <tr class="hover:bg-zinc-50/50 transition-colors">
-              <td class="py-3 px-4 font-medium text-zinc-900 flex items-center space-x-2 truncate max-w-xs">
-                ${icon}
-                <span class="truncate" title="${escapeHtml(s.source)}">${escapeHtml(s.source)}</span>
-              </td>
-              <td class="py-3 px-4 font-mono text-zinc-500 uppercase">${escapeHtml(s.type)}</td>
-              <td class="py-3 px-4 font-mono text-zinc-700">${s.chunks} chunks</td>
-              <td class="py-3 px-4">
-                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>Indexed</span>
-                </span>
-              </td>
-              <td class="py-3 px-4 text-right space-x-2">
-                <button class="text-zinc-500 hover:text-zinc-900 font-mono text-[11px] hover:underline" onclick="handleRefreshIndex()">Re-index</button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
-    }
+    // 2. Update Dev Mode Sources Table (Render with active filter)
+    const typeFilter = document.getElementById('source-type-filter');
+    const filterVal = typeFilter ? typeFilter.value : 'all';
+    const filtered = filterVal === 'all' 
+      ? sources 
+      : sources.filter(s => s.type === filterVal);
+      
+    renderSourcesTable(filtered);
+
   } catch (err) {
     console.error("Error loading sources list:", err);
+  }
+}
+
+function renderSourcesTable(sourcesToRender) {
+  const devTable = document.getElementById('dev-sources-table');
+  if (!devTable) return;
+  
+  if (sourcesToRender.length === 0) {
+    devTable.innerHTML = `
+      <tr>
+        <td colspan="5" class="py-6 text-center text-xs text-zinc-400">No matching documents found.</td>
+      </tr>
+    `;
+  } else {
+    devTable.innerHTML = sourcesToRender.map(s => {
+      const isWeb = s.type === 'website';
+      const icon = isWeb 
+        ? `<svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>`
+        : `<svg class="w-4 h-4 text-zinc-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
+        
+      return `
+        <tr class="hover:bg-zinc-50/50 transition-colors">
+          <td class="py-3 px-4 font-medium text-zinc-900 flex items-center space-x-2 truncate max-w-xs">
+            ${icon}
+            <span class="truncate" title="${escapeHtml(s.source)}">${escapeHtml(s.source)}</span>
+          </td>
+          <td class="py-3 px-4 font-mono text-zinc-500 uppercase">${escapeHtml(s.type)}</td>
+          <td class="py-3 px-4 font-mono text-zinc-700">${s.chunks} chunks</td>
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Indexed</span>
+            </span>
+          </td>
+          <td class="py-3 px-4 text-right space-x-2">
+            <button class="text-zinc-500 hover:text-zinc-900 font-mono text-[11px] hover:underline" onclick="handleRefreshIndex()">Re-index</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 }
 

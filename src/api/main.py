@@ -55,12 +55,16 @@ def list_sources():
         
         grouped = defaultdict(int)
         types = {}
+        timestamps = defaultdict(float)
         for meta in metadatas:
             if not meta:
                 continue
             source = meta.get("source") or meta.get("filename") or meta.get("url") or "Unknown"
             grouped[source] += 1
             types[source] = meta.get("type", "pdf")
+            ts = meta.get("timestamp", 0.0)
+            if ts > timestamps[source]:
+                timestamps[source] = ts
             
         sources_list = []
         for name, count in grouped.items():
@@ -68,8 +72,12 @@ def list_sources():
                 "source": name,
                 "type": types[name],
                 "chunks": count,
-                "status": "Indexed"
+                "status": "Indexed",
+                "timestamp": timestamps[name]
             })
+            
+        # Sort by timestamp descending (recent first)
+        sources_list.sort(key=lambda x: x["timestamp"], reverse=True)
         return {"sources": sources_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
